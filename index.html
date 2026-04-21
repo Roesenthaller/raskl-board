@@ -1152,4 +1152,40 @@ boardRef.on('value', (snap) => {
   if (pruned) boardRef.set({ doneIds: [..._doneIds], stamps: _stamps });
 
   _fbReady = true;
-  document.getElementById('fb-dot').classList.ad
+  document.getElementById('fb-dot').classList.add('live');
+  document.getElementById('fb-label').textContent = 'live';
+  renderBoard();
+});
+
+db.ref('.info/connected').on('value', (snap) => {
+  if (!snap.val()) {
+    document.getElementById('fb-dot').classList.remove('live');
+    document.getElementById('fb-label').textContent = 'offline';
+  }
+});
+
+newTasksRef.on('value', (snap) => {
+  _newTasks = snap.val() || {};
+  renderBoard();
+});
+
+pendingRef.on('value', (snap) => {
+  _pending = snap.val() || {};
+  renderBoard();
+});
+
+confirmedRef.on('value', (snap) => {
+  _confirmed = snap.val() || {};
+  renderBoard();
+});
+
+syncNotesRef.on('value', (snap) => {
+  const data = snap.val();
+  const el   = document.getElementById('sync-notes-text');
+  if (data && data.text && el && document.activeElement !== el) {
+    el.value = data.text;
+  }
+});
+</script>
+</body>
+</html>
