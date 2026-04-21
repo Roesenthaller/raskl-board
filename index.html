@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raskl Task Board</title>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:            "AIzaSyCE-A0t-Vne5P16msFreZBW-cfQkcRbCkA",
+      authDomain:        "raskl-tasks.firebaseapp.com",
+      databaseURL:       "https://raskl-tasks-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:         "raskl-tasks",
+      storageBucket:     "raskl-tasks.firebasestorage.app",
+      messagingSenderId: "484084762018",
+      appId:             "1:484084762018:web:5bae4fd9478fb39fb05efb"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <style>
+    :root {
+      --bg:          #f6f5f1;
+      --border:      #e8e5de;
+      --text:        #1a1a1a;
+      --muted:       #7a7a7a;
+      --urgent:      #7a0177;
+      --soon:        #c51b8a;
+      --in-progress: #f768a1;
+      --waiting:     #fbb4b9;
+      --done:        #feebe2;
+      --done-green:  #16a34a;
+      --col-width:   272px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .header-left .logo {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .header-left .logo span { font-weight: 400; color: var(--muted); }
+    .header-left .sync { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .fb-status { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); }
+    .fb-dot { width: 6px; height: 6px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; transition: background 0.3s; }
+    .fb-dot.live { background: var(--done-green); }
+
+    .header-right { display: flex; align-items: center; gap: 14px; }
+
+    .legend { display: flex; gap: 14px; transition: opacity 0.2s; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot.urgent      { background: var(--urgent); }
+    .dot.soon        { background: var(--soon); }
+    .dot.in-progress { background: var(--in-progress); }
+    .dot.waiting     { background: var(--waiting); }
+    .dot.done        { background: var(--done-green); }
+
+    /* ── COLOURS-OFF STATE ── */
+    body.colours-off .urgency-bar        { background: #dedad2 !important; }
+    body.colours-off .status-dot         { background: #c8c4bc !important; }
+    body.colours-off .legend             { opacity: 0; pointer-events: none; }
+
+    .toggle {
+      display: flex; background: var(--bg);
+      border-radius: 7px; padding: 3px; border: 1px solid var(--border);
+    }
+    .toggle button {
+      padding: 5px 14px; border: none; border-radius: 5px;
+      font-size: 12px; cursor: pointer; background: transparent;
+      color: var(--muted); font-weight: 500; transition: all 0.12s;
+    }
+    .toggle button.active {
+      background: white; color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* ── ADD TASK BUTTON ── */
+    .add-task-btn {
+      background: var(--text); color: white;
+      border: none; border-radius: 7px;
+      padding: 7px 14px; font-size: 12px;
+      font-weight: 600; cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+    .add-task-btn:hover { opacity: 0.75; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 500; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: white; border-radius: 12px;
+      padding: 26px; width: 420px;
+      max-width: calc(100vw - 40px);
+      box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+    }
+    .modal-title {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 20px; color: var(--text);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); display: block; margin-bottom: 5px;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; border: 1px solid var(--border);
+      border-radius: 7px; padding: 8px 11px;
+      font-size: 13px; font-family: inherit;
+      color: var(--text); background: white;
+      outline: none; transition: border-color 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: #999; }
+    .form-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    .form-actions {
+      display: flex; justify-content: flex-end;
+      gap: 10px; margin-top: 22px;
+    }
+    .btn-cancel {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; padding: 7px 18px;
+      font-size: 12px; cursor: pointer; color: var(--muted);
+      font-family: inherit; transition: border-color 0.12s;
+    }
+    .btn-cancel:hover { border-color: #aaa; }
+    .btn-submit {
+      background: var(--text); color: white;
+      border: none; border-radius: 7px;
+      padding: 7px 18px; font-size: 12px;
+      font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: opacity 0.15s;
+    }
+    .btn-submit:hover { opacity: 0.78; }
+
+    /* ── BOARD ── */
+    .board-wrap {
+      overflow-x: auto;
+      padding: 24px;
+      min-height: calc(100vh - 56px);
+    }
+    .board-wrap.fit-mode { overflow-x: visible; }
+
+    .board {
+      display: flex; flex-direction: row;
+      gap: 14px; align-items: flex-start;
+      min-width: max-content;
+    }
+    .board.fit-mode {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      min-width: unset; align-items: start;
+    }
+
+    /* ── COLUMN ── */
+    .col { width: var(--col-width); flex-shrink: 0; display: flex; flex-direction: column; }
+    .board.fit-mode .col { width: auto; flex-shrink: unset; }
+    .col-header { cursor: pointer; user-select: none; }
+    .col-header:hover .col-title { opacity: 0.7; }
+    .col.collapsed .cards { display: none; }
+    .col.collapsed .col-header { border-bottom-color: transparent; margin-bottom: 0; padding-bottom: 6px; }
+    .col-toggle { font-size: 10px; color: var(--muted); margin-left: 2px; flex-shrink: 0; transition: transform 0.15s; }
+    .col.collapsed .col-toggle { transform: rotate(-90deg); }
+
+    /* ── COMPACT MODE ── */
+    .board.compact-mode .col { width: 190px; }
+    .board.fit-mode.compact-mode .col { width: auto; }
+    .board.compact-mode .card-content { padding: 7px 9px; gap: 7px; }
+    .board.compact-mode .card-title { font-size: 11px; }
+    .board.compact-mode .card-meta { margin-top: 5px; gap: 5px; }
+    .board.compact-mode .chip { font-size: 9.5px; padding: 1px 5px; }
+
+    /* ── COMPLETED COLUMN ── */
+    .col-done { border-left: 1px solid var(--border); padding-left: 14px; }
+    .col-done .col-header { border-bottom-color: var(--done-green); }
+    .col-done .col-title { color: var(--done-green); }
+    .done-card {
+      background: white; border-radius: 8px;
+      padding: 8px 10px; border: 1px solid var(--border); opacity: 0.72;
+    }
+    .done-card-title { font-size: 11.5px; color: var(--text); text-decoration: line-through; line-height: 1.4; }
+    .done-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 10px; color: var(--muted); flex-wrap: wrap; }
+    .done-date-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin: 10px 0 5px; padding: 0 2px;
+    }
+    .done-date-label:first-child { margin-top: 0; }
+
+    /* ── AWAITING SIGN-OFF COLUMN ── */
+    .col-signoff { border-left: 1px solid var(--border); padding-left: 14px; }
+    .col-signoff .col-header { border-bottom-color: #f59e0b; }
+    .col-signoff .col-title { color: #b45309; }
+    .signoff-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
+    .signoff-card-title { font-size: 12px; line-height: 1.4; color: var(--text); }
+    .signoff-card-reason { font-size: 10.5px; color: var(--muted); margin-top: 5px; font-style: italic; line-height: 1.35; }
+    .signoff-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .confirm-btn {
+      background: var(--done-green); color: white; border: none; border-radius: 5px;
+      padding: 4px 10px; font-size: 10.5px; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: opacity 0.15s; margin-left: auto;
+    }
+    .confirm-btn:hover { opacity: 0.8; }
+    .undo-btn {
+      background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 5px;
+      padding: 2px 8px; font-size: 10px; cursor: pointer; font-family: inherit;
+      transition: border-color 0.12s, color 0.12s; margin-left: auto;
+    }
+    .undo-btn:hover { border-color: var(--soon); color: var(--soon); }
+
+    .col-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 2px 9px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .col-title {
+      font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .col-count {
+      font-size: 10.5px; color: var(--muted); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 9px; padding: 1px 7px; flex-shrink: 0;
+    }
+    .cards { display: flex; flex-direction: column; gap: 7px; }
+
+    /* ── CARD ── */
+    .card {
+      background: white; border-radius: 8px;
+      display: flex; flex-direction: column;
+      border: 1px solid var(--border);
+      transition: border-color 0.12s, opacity 0.2s;
+      overflow: hidden;
+    }
+    .card:hover { border-color: #bbb; }
+    .card.is-done { opacity: 0.4; }
+    .card.is-done .card-title { text-decoration: line-through; }
+
+    /* ── USER-SUBMITTED CARD ── */
+    .card.user-submitted {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+    .card.user-submitted:hover { border-color: #3b82f6; }
+
+    /* Urgency bar */
+    .urgency-bar { height: 3px; flex-shrink: 0; }
+    .urgency-bar.urgent      { background: var(--urgent); }
+    .urgency-bar.soon        { background: var(--soon); }
+    .urgency-bar.in-progress { background: var(--in-progress); }
+    .urgency-bar.waiting     { background: var(--waiting); }
+    .urgency-bar.done        { background: var(--done); }
+
+    /* Card content row */
+    .card-content { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; }
+
+    /* Checkbox */
+    .check-btn {
+      width: 17px; height: 17px; border-radius: 50%;
+      border: 1.5px solid #d1d5db; background: white;
+      cursor: pointer; flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; padding: 0;
+    }
+    .check-btn:hover { border-color: var(--done-green); }
+    .check-btn.checked { background: var(--done-green); border-color: var(--done-green); }
+    .check-btn.checked::after {
+      content: ''; display: block; width: 4px; height: 7px;
+      border: 1.5px solid white; border-top: none; border-left: none;
+      transform: rotate(42deg) translate(-0.5px, -1px);
+    }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-title { font-size: 12.5px; line-height: 1.45; color: var(--text); word-break: break-word; }
+    .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+
+    /* Edit button — appears on hover */
+    .card-edit-btn {
+      opacity: 0; background: transparent; border: none;
+      cursor: pointer; color: var(--muted); font-size: 13px;
+      padding: 0 4px; border-radius: 4px; flex-shrink: 0;
+      transition: opacity 0.15s, background 0.12s, color 0.12s;
+      margin-left: auto; line-height: 1;
+    }
+    .card-content:hover .card-edit-btn { opacity: 1; }
+    .card-edit-btn:hover { background: var(--bg); color: var(--text); }
+
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.urgent       { background: var(--urgent); }
+    .status-dot.soon         { background: var(--soon); }
+    .status-dot.in-progress  { background: var(--in-progress); }
+    .status-dot.waiting      { background: var(--waiting); }
+    .status-dot.done         { background: var(--done-green); }
+
+    .chip {
+      font-size: 10.5px; padding: 2px 7px; border-radius: 4px;
+      font-weight: 500; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+    }
+
+    /* Submitted task inline controls */
+    .sub-badge {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      background: #3b82f6; color: white; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;
+    }
+    .sub-actions { display: flex; gap: 4px; margin-left: auto; }
+    .sub-edit-btn, .sub-delete-btn {
+      background: transparent; border: 1px solid #bfdbfe;
+      border-radius: 4px; padding: 2px 7px; font-size: 10px;
+      cursor: pointer; font-family: inherit; color: var(--muted);
+      transition: border-color 0.12s, color 0.12s;
+    }
+    .sub-edit-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+    .sub-delete-btn:hover { border-color: var(--urgent); color: var(--urgent); }
+
+    .p-seeds          { background: #fef3c7; color: #92400e; }
+    .p-pink-lane      { background: #fce7f3; color: #9d174d; }
+    .p-orchard        { background: #d1fae5; color: #065f46; }
+    .p-forth-street   { background: #e0f2fe; color: #0369a1; }
+    .p-northumberland { background: #dcfce7; color: #14532d; }
+    .p-tullie         { background: #e0e7ff; color: #3730a3; }
+    .p-mitcham        { background: #fef9c3; color: #713f12; }
+    .p-centre-life    { background: #dbeafe; color: #1e40af; }
+    .p-panama         { background: #f3e8ff; color: #6b21a8; }
+    .p-silver         { background: #f1f5f9; color: #334155; }
+    .p-ryton          { background: #ffedd5; color: #9a3412; }
+    .p-delcy          { background: #ecfdf5; color: #065f46; }
+    .p-black-planet   { background: #1e1b4b; color: #c7d2fe; }
+    .p-admin          { background: #f8fafc; color: #475569; }
+    .p-person         { background: #f3f4f6; color: #374151; }
+    .p-springfield    { background: #ecfeff; color: #164e63; }
+    .p-pilgrim        { background: #ffe4e6; color: #881337; }
+    .p-morden         { background: #fff7ed; color: #9a3412; }
+    .p-highstken      { background: #fdf4ff; color: #701a75; }
+    .p-cleethorpes    { background: #eff6ff; color: #1d4ed8; }
+    .p-byker          { background: #f0fdf4; color: #166534; }
+    .p-limest         { background: #fefce8; color: #854d0e; }
+    .p-whitechapel    { background: #fff1f2; color: #881337; }
+
+    /* ── SYNC NOTES PANEL ── */
+    .sync-notes-panel {
+      position: fixed; bottom: 20px; right: 20px;
+      width: 280px; background: white;
+      border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.11);
+      z-index: 300; overflow: hidden;
+    }
+    .sync-notes-panel.collapsed .sync-notes-body { display: none; }
+    .sync-notes-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; cursor: pointer; user-select: none;
+    }
+    .sync-notes-title {
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+    }
+    .sync-notes-caret { font-size: 10px; color: var(--muted); transition: transform 0.15s; }
+    .sync-notes-panel.collapsed .sync-notes-caret { transform: rotate(-90deg); }
+    .sync-notes-body { padding: 10px 12px 14px; }
+    .sync-notes-textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 6px;
+      padding: 7px 9px; font-size: 11.5px; font-family: inherit;
+      color: var(--text); background: white; outline: none;
+      resize: vertical; min-height: 84px; line-height: 1.5;
+      transition: border-color 0.15s;
+    }
+    .sync-notes-textarea:focus { border-color: #999; }
+    .sync-notes-hint { font-size: 9.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+    .sync-notes-status { font-size: 9.5px; color: var(--done-green); margin-top: 3px; opacity: 0; transition: opacity 0.4s; height: 14px; }
+    .sync-notes-status.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- ── ADD TASK MODAL ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="add-task-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">Add Task</div>
+    <div class="form-group">
+      <label class="form-label" for="form-project">Project</label>
+      <input class="form-input" id="form-project" list="project-list" placeholder="e.g. Pink Lane" autocomplete="off">
+      <datalist id="project-list">
+        <option value="Seeds in the City">
+        <option value="Pink Lane">
+        <option value="Orchard St">
+        <option value="Forth Street">
+        <option value="Northumberland St">
+        <option value="Tullie">
+        <option value="Mitcham Bandstand">
+        <option value="Centre for Life">
+        <option value="Panama Swimming Club">
+        <option value="Silver Gallery">
+        <option value="Delcy">
+        <option value="Black Planet">
+        <option value="Morden Moments">
+        <option value="High St Ken">
+        <option value="Cleethorpes">
+        <option value="Byker Underpass">
+        <option value="Lime St">
+        <option value="Springfield">
+        <option value="Pilgrim Poles">
+        <option value="Whitechapel">
+        <option value="Admin">
+      </datalist>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="form-assignee">Assignee</label>
+      <select class="form-select" id="form-assignee">
+        <option>Dan</option>
+        <option>Hannah</option>
+        <option>Ellie</option>
+        <option>Hugh</option>
+        <option>Jack</option>
+        <option>Amy</option>
+        <option>David</option>
+        <option>Brad</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="form-urgency">Urgency</label>
+      <select class="form-select" id="form-urgency">
+        <option value="urgent">Critical</option>
+        <option value="soon" selected>Active</option>
+        <option value="in-progress">Relaxed</option>
+        <option value="waiting">Back burner</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="form-description">Description</label>
+      <textarea class="form-textarea" id="form-description" placeholder="Describe the task…"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitNewTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT TASK MODAL ─────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="edit-task-modal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <div class="modal-title" id="edit-modal-title">Edit Task</div>
+    <div class="form-group">
+      <label class="form-label" for="edit-project">Project</label>
+      <input class="form-input" id="edit-project" list="project-list" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="edit-assignee">Assignee</label>
+      <select class="form-select" id="edit-assignee">
+        <option>Dan</option>
+        <option>Hannah</option>
+        <option>Ellie</option>
+        <option>Hugh</option>
+        <option>Jack</option>
+        <option>Amy</option>
+        <option>David</option>
+        <option>Brad</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="edit-description">Description</label>
+      <textarea class="form-textarea" id="edit-description" style="min-height:110px"></textarea>
+    </div>
+    <div class="form-group" id="edit-status-group">
+      <label class="form-label" for="edit-status">Urgency</label>
+      <select class="form-select" id="edit-status">
+        <option value="urgent">Critical</option>
+        <option value="soon">Active</option>
+        <option value="in-progress">Relaxed</option>
+        <option value="waiting">Back burner</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-submit" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="logo">Raskl <span>/ Task Board</span></div>
+    <div class="sync">Last synced: 21 Apr 2026, 06:45</div>
+    <div class="fb-status"><div class="fb-dot" id="fb-dot"></div><span id="fb-label">connecting…</span></div>
+  </div>
+  <div class="header-right">
+    <div class="legend">
+      <div class="legend-item"><div class="dot urgent"></div>Critical</div>
+      <div class="legend-item"><div class="dot soon"></div>Active</div>
+      <div class="legend-item"><div class="dot in-progress"></div>Relaxed</div>
+      <div class="legend-item"><div class="dot waiting"></div>Back burner</div>
+      <div class="legend-item"><div class="dot done"></div>Finished</div>
+    </div>
+    <button class="add-task-btn" onclick="openModal()">+ Add Task</button>
+    <div class="toggle">
+      <button id="btn-project" class="active" onclick="setView('project')">By Project</button>
+      <button id="btn-assignee" onclick="setView('assignee')">By Assignee</button>
+      <button id="btn-fit" onclick="toggleFit()">Fit</button>
+      <button id="btn-compact" onclick="toggleCompact()">Compact</button>
+      <button id="btn-colours" class="active" onclick="toggleColours()">Colour</button>
+    </div>
+  </div>
+</header>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<!-- ── SYNC NOTES PANEL ────────────────────────────────────────────────────── -->
+<div class="sync-notes-panel collapsed" id="sync-notes-panel">
+  <div class="sync-notes-header" onclick="toggleSyncNotes()">
+    <span class="sync-notes-title">Notes for Next Sync</span>
+    <span class="sync-notes-caret">▾</span>
+  </div>
+  <div class="sync-notes-body">
+    <textarea class="sync-notes-textarea" id="sync-notes-text"
+      placeholder="Leave notes, corrections, or questions for Claude's next morning sync…"
+      oninput="onSyncNotesInput()"></textarea>
+    <div class="sync-notes-hint">Auto-saved · Claude reads this each morning</div>
+    <div class="sync-notes-status" id="sync-notes-status">Saved ✓</div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const tasks = [
+  // Seeds in the City
+  { id: 1,  title: "Updated budget breakdown — design, install &amp; disposal (engineer green-lit 8 Apr, now unblocked)",  project: "Seeds in the City", assignee: "Dan",   status: "urgent" },
+  { id: 2,  title: "StudioFolk–Raskl contract — NLA waiting to set up payments",                                           project: "Seeds in the City", assignee: "Dan",   status: "urgent" },
+  { id: 3,  title: "Cost Plan",                                                                                             project: "Seeds in the City", assignee: "Jack",  status: "in-progress" },
+  { id: 35, title: "Seeds planning — submitted 16 Apr (ref PP-14863452). Awaiting planner validation + formal reference number. StudioFolk monitoring. City Arts Panel presentation: Thu 23 Apr.", project: "Seeds in the City", assignee: "Dan", status: "waiting" },
+  { id: 39, title: "Updated Raskl programme — send to Lucy (NLA). Needed ahead of Thu 23 Apr Panel presentation.",         project: "Seeds in the City", assignee: "Ellie", status: "urgent" },
+  // Pink Lane
+  { id: 4,  title: "Status update / comms for works",                                                                      project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
+  { id: 5,  title: "Complete outstanding docs: RAMs update + electrical schematics — [⚠ previously labelled 'P&amp;A docs' — confirm what this referred to]", project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
+  { id: 6,  title: "Lighting settings review — [⚠ previously noted 'AAA not AAC' — confirm what this referred to: circuit labels? zones? Please clarify]",    project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
+  { id: 7,  title: "Status Update",                                                                                        project: "Pink Lane", assignee: "Jack",  status: "in-progress" },
+  { id: 8,  title: "FRA documents — Z3 QMS pack still outstanding (Jack away until 21 Apr). Louise Debnam placed FRA hold for gateway 20 Apr — will firm up date as works progress.",       project: "Pink Lane", assignee: "Jack",  status: "waiting" },
+  { id: 9,  title: "Z1 install — Pete Evans confirmed (17 Apr): team arranged, £3k agreed with Hannah. Technical questions being addressed via Greg &amp; Brian (Ellie chasing 20 Apr). Jack back 21 Apr. Critical path meeting Wed 23 Apr.", project: "Pink Lane", assignee: "Hannah", status: "urgent" },
+  { id: 24, title: "NE1 requests: arrange prototype gateway collection (Louise: no moving date yet, looking at next month) + collect off-cuts for Tiny Toon.", project: "Pink Lane", assignee: "Dan", status: "soon" },
+  { id: 42, title: "Check turnbuckle stock before next site visit, order replacements (some damaged/lost per Brad handover). Retrieve turnbuckles left on canopy. Brad on leave until 27 Apr.", project: "Pink Lane", assignee: "Jack", status: "soon" },
+  { id: 44, title: "NE1 critical path — Dan responded 17 Apr (working hours + subcontractor info). Louise asked for detailed schedule; Dan explained they can't be more specific. Anna Czigler back from leave 20 Apr and available to assist. Critical path meeting Wed 23 Apr. Z3 QMS pack still outstanding (Jack back 21 Apr).", project: "Pink Lane", assignee: "Dan", status: "urgent" },
+  // Orchard St
+  { id: 23, title: "Artist brief reviewed, replied to Anna 2 Apr re: programme overlap — awaiting catch-up. Dan updated NCC engineer (Muhammad Rehan) on tunnel programme 20 Apr: slightly behind on survey access but expects to catch up.",               project: "Orchard St", assignee: "Dan", status: "waiting" },
+  // Forth Street
+  { id: 11, title: "Forth Street design proposals review (Planit-IE)",                                                     project: "Forth Street", assignee: "Dan",  status: "soon" },
+  { id: 38, title: "Forth Lane archway light install — underway w/c 13 Apr. NCC road closure + barriers confirmed (Hattons). Power connection live 13 Apr (Enerveo). Jack to update Vikki (NCC) re progress.", project: "Forth Street", assignee: "Jack", status: "in-progress" },
+  // Northumberland St
+  { id: 12, title: "Timber oil — advice sent, awaiting Howard Hall decision on how to proceed",                            project: "Northumberland St", assignee: "Dan", status: "waiting" },
+  // Tullie
+  { id: 13, title: "Snagging — Septimius puzzle sticker residue (unresolved)",                                             project: "Tullie", assignee: "Dan", status: "in-progress" },
+  { id: 31, title: "Phase 3 fit-out tender — invited by Linh Bui; questions to be directed to A&amp;T (de Matos Ryan / Creative Core)", project: "Tullie", assignee: "Dan", status: "soon" },
+  // Mitcham Bandstand
+  { id: 14, title: "2026 install end June (ready 4 Jul), dismantle after 3 Oct — dates confirmed by Mark Warren 7 Apr, catch-up call requested for next week", project: "Mitcham Bandstand", assignee: "Dan", status: "waiting" },
+  // Centre for Life
+  { id: 15, title: "CNC fossil panel — Dan proposed call with Andy Lloyd, awaiting reply",                                 project: "Centre for Life", assignee: "Dan", status: "waiting" },
+  // Panama Swimming Club
+  { id: 16, title: "Elevation drawings — quote sent at £120+VAT ea., awaiting client go-ahead",                           project: "Panama Swimming Club", assignee: "Dan", status: "waiting" },
+  // Silver Gallery
+  { id: 17, title: "Programme / Gantt — ProContract submission confirmed",                                                 project: "Silver Gallery", assignee: "Ellie", status: "in-progress" },
+  // Byker Underpass
+  { id: 18, title: "Byker Underpass wayfinding + steel artwork — Hugh on paternity leave, follow up on NCC meeting (25 Mar) with Rosa / Harper Perry", project: "Byker Underpass", assignee: "Amy", status: "urgent" },
+  { id: 36, title: "Underpass tiles — Isabel Lezcano (NCC) visit scheduled Thu/Fri 10–11 Apr to count boxes before contractor collection w/c 13 Apr. Confirm visit happened + whether collection is now proceeding.", project: "Byker Underpass", assignee: "Dan", status: "soon" },
+  // Delcy
+  { id: 19, title: "Production underway — Barbican production meeting Mon 13 Apr 3–4pm (Level 6 Art Gallery). Hannah + Emily monitoring.", project: "Delcy", assignee: "Dan", status: "in-progress" },
+  { id: 33, title: "Clay procurement — Valentine Clays: 15t Red Earthenware paid (2 invoices confirmed 15 Apr). AA Fireclay order still unreconciled with Valentine's. Near completion.", project: "Delcy", assignee: "Ellie", status: "in-progress" },
+  // Black Planet
+  { id: 25, title: "Production underway. Fabrication quotes requested from Francey Limited 16 Apr (Amy) — MDF plinths + perspex vitrines. Monitor response + confirm timeline.", project: "Black Planet", assignee: "Dan", status: "in-progress" },
+  // Morden Moments
+  { id: 27, title: "SE engineering — Patrick (StudioFolk) replied 17–20 Apr answering Jack's questions: Equitone Tectiva confirmed in DAS, steel finish queries outstanding. Hannah picking up while Jack away until 21 Apr. Momentum review ongoing.",      project: "Morden Moments", assignee: "Jack", status: "in-progress" },
+  { id: 28, title: "Site 2B — Planting day completed (Edward StudioFolk sent photos 20 Apr). Planning validated (ref 26/FULL/0404). Patrick confirmed programme sent to Merton 20 Apr. Monitoring.", project: "Morden Moments", assignee: "Dan", status: "waiting" },
+  // High St Ken
+  { id: 29, title: "Signage prototype — £5k quote sent to Charles Holland Jan 26, no reply since 4 Feb — chase or close", project: "High St Ken", assignee: "Dan", status: "soon" },
+  // Cleethorpes
+  { id: 37, title: "Co-design workshop Mon 20 Apr. Jack sent DXF + PDF of tile face (578×181mm) to Tilly — confirmed correct. Dye sublimation sample dispatched via DPD (tracking 15976979432758) — confirm receipt.", project: "Cleethorpes", assignee: "Dan", status: "soon" },
+  // Admin
+  { id: 20, title: "Raindrop — pension info overdue, chased again 2 Apr — respond ASAP",                                  project: "Admin", assignee: "Dan", status: "urgent" },
+  { id: 21, title: "RSM year-end accounts — meeting scheduled by Ellie: Tue 5 May 2026, 12:30–1:30pm BST (Google Meet). Still awaiting draft from Neil Hindley beforehand.",                                            project: "Admin", assignee: "Dan", status: "waiting" },
+  { id: 26, title: "PL insurance claim (Ref: 14712888) — DPI Insurance engaged, monitoring",                             project: "Admin", assignee: "Dan", status: "waiting" },
+  { id: 30, title: "Fire Risk Assessment for Unit 37 — Morley Property chased again 2 Apr, overdue since 31 Mar",         project: "Admin", assignee: "Dan", status: "urgent" },
+  // Lime St Padel
+  { id: 34, title: "Lime St Padel — site levels reviewed, structural/formation query sent to Marc Horn (Studio Horn) — awaiting reply", project: "Lime St", assignee: "Dan", status: "waiting" },
+  // Springfield
+  { id: 40, title: "Springfield — Subcontract scope meeting with POoR Collective (Larry Botchway) agreed Fri 25 Apr, 9am–12pm. Kick-off with &amp;London / Studio Bosk / Barratt London also in progress.", project: "Springfield", assignee: "Dan", status: "soon" },
+  // Pilgrim Poles
+  { id: 41, title: "Pilgrim Poles install — Paul Brown (Aynsley) on site 16 Apr. Bolt torque photos needed by TW before grouting Friday morning. Confirm photos received + forwarded to TW. If not received yet, chase Paul Brown immediately.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent" },
+  { id: 43, title: "Bradleys — damaged plinth panels. Mark Ward (15 Apr): factory repair preferred (more robust). On-site repair possible but inferior. Decision needed: send to factory vs install with damage + remediate later.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent" },
+  // Whitechapel
+  { id: 45, title: "Whitechapel Gateway tender — on hold until after 7 May election (Luc Jones / Layer Studio, confirmed 16 Apr). No action until w/c 12 May.", project: "Whitechapel", assignee: "Dan", status: "waiting" },
+  // Barbican
+  { id: 46, title: "Barbican — Rober Ryman 'The Real Thing': Hannah replied 20 Apr with estimate of approx £40k all in (standard paint / mist coat). Awaiting Maarten response.", project: "Admin", assignee: "Dan", status: "waiting" },
+  { id: 47, title: "Call Northern Print — Dan reminder 20 Apr.", project: "Admin", assignee: "Dan", status: "soon" },
+];
+
+// ── RECENTLY CLOSED ───────────────────────────────────────────────────────────
+
+const recentlyClosed = [
+  { id: 32, title: "Planning application responses to NLA — StudioFolk submitted full pack 8 Apr, Dan confirmed engineer green light", project: "Seeds in the City", assignee: "Dan", closedDate: "9 Apr 2026" },
+];
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+
+const projectChip = {
+  "Seeds in the City":    "p-seeds",
+  "Pink Lane":            "p-pink-lane",
+  "Orchard St":           "p-orchard",
+  "Forth Street":         "p-forth-street",
+  "Northumberland St":    "p-northumberland",
+  "Tullie":               "p-tullie",
+  "Mitcham Bandstand":    "p-mitcham",
+  "Centre for Life":      "p-centre-life",
+  "Panama Swimming Club": "p-panama",
+  "Silver Gallery":       "p-silver",
+  "Ryton Handrails":      "p-ryton",
+  "Delcy":                "p-delcy",
+  "Black Planet":         "p-black-planet",
+  "Morden Moments":       "p-morden",
+  "High St Ken":          "p-highstken",
+  "Cleethorpes":          "p-cleethorpes",
+  "Byker Underpass":      "p-byker",
+  "Lime St":              "p-limest",
+  "Admin":                "p-admin",
+  "Springfield":          "p-springfield",
+  "Pilgrim Poles":        "p-pilgrim",
+  "Whitechapel":          "p-whitechapel",
+};
+
+const statusOrder = { urgent: 0, soon: 1, "in-progress": 2, waiting: 3, done: 4 };
+const teamOrder   = ["Dan", "Hannah", "Ellie", "Hugh", "Jack", "Amy", "David", "Brad", "Unassigned"];
+
+// ── FIREBASE REFS ─────────────────────────────────────────────────────────────
+
+const db           = firebase.database();
+const boardRef     = db.ref('board/state');
+const newTasksRef  = db.ref('board/newTasks');
+const pendingRef   = db.ref('board/pendingClosure');
+const confirmedRef = db.ref('board/confirmed');
+const syncNotesRef = db.ref('board/syncNotes');
+
+// ── DONE STATE ────────────────────────────────────────────────────────────────
+
+let _doneIds = new Set();
+let _stamps  = {};
+let _fbReady = false;
+
+function getDone() {
+  const combined = new Set(_doneIds);
+  tasks.filter(t => t.status === "done").forEach(t => combined.add(t.id));
+  return combined;
+}
+
+function getStamps() { return { ..._stamps }; }
+
+function toggleDone(id) {
+  if (!_fbReady) return;
+  if (_doneIds.has(id)) { _doneIds.delete(id); delete _stamps[id]; }
+  else                  { _doneIds.add(id);    _stamps[id] = Date.now(); }
+  boardRef.set({ doneIds: [..._doneIds], stamps: _stamps });
+  renderBoard();
+}
+
+// ── LIVE STATE ────────────────────────────────────────────────────────────────
+
+let _newTasks  = {};
+let _pending   = {};
+let _confirmed = {};
+
+// ── ADD TASK MODAL ────────────────────────────────────────────────────────────
+
+function openModal() {
+  document.getElementById('add-task-modal').classList.add('open');
+  setTimeout(() => document.getElementById('form-description').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('add-task-modal').classList.remove('open');
+  document.getElementById('form-project').value     = '';
+  document.getElementById('form-assignee').value    = 'Dan';
+  document.getElementById('form-urgency').value     = 'soon';
+  document.getElementById('form-description').value = '';
+}
+
+function submitNewTask() {
+  const project     = document.getElementById('form-project').value.trim();
+  const assignee    = document.getElementById('form-assignee').value;
+  const urgency     = document.getElementById('form-urgency').value;
+  const description = document.getElementById('form-description').value.trim();
+  if (!project || !description) {
+    document.getElementById(project ? 'form-description' : 'form-project').focus();
+    return;
+  }
+  newTasksRef.push({ project, assignee, urgency, description, submittedAt: Date.now() });
+  closeModal();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeEditModal(); }
+  if (e.key === 'Enter' && e.metaKey) {
+    if (document.getElementById('add-task-modal').classList.contains('open'))  submitNewTask();
+    if (document.getElementById('edit-task-modal').classList.contains('open')) saveEdit();
+  }
+});
+
+// ── EDIT TASK MODAL ───────────────────────────────────────────────────────────
+
+let _editingType = null; // 'task' | 'submitted'
+let _editingId   = null;
+let _editingKey  = null;
+
+function openEditModal(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  _editingType = 'task';
+  _editingId   = id;
+  _editingKey  = null;
+  document.getElementById('edit-modal-title').textContent    = 'Edit Task';
+  document.getElementById('edit-project').value              = task.project;
+  document.getElementById('edit-assignee').value             = task.assignee;
+  document.getElementById('edit-description').value          = task.title.replace(/&amp;/g, '&');
+  document.getElementById('edit-status').value               = task.status;
+  document.getElementById('edit-status-group').style.display = '';
+  document.getElementById('edit-task-modal').classList.add('open');
+  setTimeout(() => document.getElementById('edit-description').focus(), 50);
+}
+
+function openEditSubmittedModal(key) {
+  const task = _newTasks[key];
+  if (!task) return;
+  _editingType = 'submitted';
+  _editingId   = null;
+  _editingKey  = key;
+  document.getElementById('edit-modal-title').textContent    = 'Edit Submitted Task';
+  document.getElementById('edit-project').value              = task.project || '';
+  document.getElementById('edit-assignee').value             = task.assignee || 'Dan';
+  document.getElementById('edit-description').value          = task.description || '';
+  document.getElementById('edit-status').value               = task.urgency || 'soon';
+  document.getElementById('edit-status-group').style.display = '';
+  document.getElementById('edit-task-modal').classList.add('open');
+  setTimeout(() => document.getElementById('edit-description').focus(), 50);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-task-modal').classList.remove('open');
+  _editingType = null; _editingId = null; _editingKey = null;
+}
+
+function saveEdit() {
+  const project  = document.getElementById('edit-project').value.trim();
+  const assignee = document.getElementById('edit-assignee').value;
+  const desc     = document.getElementById('edit-description').value.trim();
+  const status   = document.getElementById('edit-status').value;
+  if (!project || !desc) return;
+
+  if (_editingType === 'submitted' && _editingKey) {
+    newTasksRef.child(_editingKey).update({ project, assignee, description: desc, urgency: status });
+    closeEditModal();
+    return;
+  }
+
+  if (_editingType === 'task' && _editingId !== null) {
+    const task = tasks.find(t => t.id === _editingId);
+    if (!task) return;
+    task.project  = project;
+    task.assignee = assignee;
+    task.title    = desc.replace(/&/g, '&amp;');
+    task.status   = status;
+    closeEditModal();
+    renderBoard();
+  }
+}
+
+function deleteNewTask(key) {
+  if (confirm('Remove this submitted task?')) newTasksRef.child(key).remove();
+}
+
+// ── SIGN-OFF ACTIONS ──────────────────────────────────────────────────────────
+
+function confirmClosed(key) {
+  const task = _pending[key];
+  if (!task) return;
+  confirmedRef.child(key).set({ ...task, confirmedAt: Date.now() });
+  pendingRef.child(key).remove();
+}
+
+function undoConfirmed(key) {
+  const task = _confirmed[key];
+  if (!task) return;
+  const { confirmedAt, ...taskData } = task;
+  pendingRef.child(key).set(taskData);
+  confirmedRef.child(key).remove();
+}
+
+// ── SYNC NOTES ────────────────────────────────────────────────────────────────
+
+let _syncNotesTimer = null;
+
+function toggleSyncNotes() {
+  document.getElementById('sync-notes-panel').classList.toggle('collapsed');
+}
+
+function onSyncNotesInput() {
+  clearTimeout(_syncNotesTimer);
+  _syncNotesTimer = setTimeout(() => {
+    const text = document.getElementById('sync-notes-text').value;
+    syncNotesRef.set({ text, updatedAt: Date.now() });
+    const s = document.getElementById('sync-notes-status');
+    s.classList.add('visible');
+    setTimeout(() => s.classList.remove('visible'), 2000);
+  }, 800);
+}
+
+// ── COLOUR TOGGLE ─────────────────────────────────────────────────────────────
+
+let _coloursOn = true;
+
+function toggleColours() {
+  _coloursOn = !_coloursOn;
+  document.body.classList.toggle('colours-off', !_coloursOn);
+  document.getElementById('btn-colours').classList.toggle('active', _coloursOn);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+
+// Build a submitted-task pseudo-object for inline rendering
+function submittedItems(filterFn) {
+  return Object.entries(_newTasks)
+    .filter(([, t]) => filterFn(t))
+    .map(([key, t]) => ({
+      id:           '_sub_' + key,
+      _key:         key,
+      _isSubmitted: true,
+      title:        t.description || '',
+      project:      t.project || '',
+      assignee:     t.assignee || '',
+      status:       t.urgency || 'soon',
+    }));
+}
+
+function submittedCardHTML(task, mode) {
+  const chip = mode === "project"
+    ? `<span class="chip p-person">${task.assignee}</span>`
+    : `<span class="chip ${projectChip[task.project] || "p-admin"}" title="${task.project}">${task.project}</span>`;
+  return `
+    <div class="card user-submitted">
+      <div class="urgency-bar ${task.status}"></div>
+      <div class="card-content">
+        <div class="card-body">
+          <div class="card-title">${task.title}</div>
+          <div class="card-meta">
+            <span class="sub-badge">you</span>
+            ${chip}
+            <div class="sub-actions">
+              <button class="sub-edit-btn" onclick="openEditSubmittedModal('${task._key}')">✎</button>
+              <button class="sub-delete-btn" onclick="deleteNewTask('${task._key}')">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function cardHTML(task, mode, done) {
+  if (task._isSubmitted) return submittedCardHTML(task, mode);
+
+  const isDone = done.has(task.id);
+  const status = isDone ? "done" : task.status;
+  const chip   = mode === "project"
+    ? `<span class="chip p-person">${task.assignee}</span>`
+    : `<span class="chip ${projectChip[task.project] || "p-admin"}" title="${task.project}">${task.project}</span>`;
+
+  return `
+    <div class="card${isDone ? " is-done" : ""}">
+      <div class="urgency-bar ${status}"></div>
+      <div class="card-content">
+        <button class="check-btn${isDone ? " checked" : ""}" onclick="toggleDone(${task.id})" title="${isDone ? "Mark undone" : "Mark done"}"></button>
+        <div class="card-body">
+          <div class="card-title">${task.title}</div>
+          <div class="card-meta">
+            <div class="status-dot ${status}"></div>
+            ${chip}
+            <button class="card-edit-btn" onclick="openEditModal(${task.id})" title="Edit task">✎</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function colHTML(title, items, mode, done) {
+  if (!items.length) return "";
+  const sorted = [...items].sort((a, b) => {
+    const ai = (!a._isSubmitted && done.has(a.id)) ? 99 : (statusOrder[a.status] ?? 5);
+    const bi = (!b._isSubmitted && done.has(b.id)) ? 99 : (statusOrder[b.status] ?? 5);
+    return ai - bi;
+  });
+  const colId = "col-" + title.replace(/\s+/g, "-").toLowerCase();
+  const isCollapsed = collapsedCols.has(title);
+  return `
+    <div class="col${isCollapsed ? " collapsed" : ""}" id="${colId}">
+      <div class="col-header" onclick="toggleCol('${title}')">
+        <div class="col-title">${title}</div>
+        <div class="col-count">${items.length}</div>
+        <div class="col-toggle">▾</div>
+      </div>
+      <div class="cards">
+        ${sorted.map(t => cardHTML(t, mode, done)).join("")}
+      </div>
+    </div>`;
+}
+
+let currentView  = "project";
+let fitMode      = false;
+let compactMode  = false;
+const collapsedCols = new Set();
+
+function toggleFit() {
+  fitMode = !fitMode;
+  document.getElementById("board").classList.toggle("fit-mode", fitMode);
+  document.querySelector(".board-wrap").classList.toggle("fit-mode", fitMode);
+  document.getElementById("btn-fit").classList.toggle("active", fitMode);
+}
+
+function toggleCompact() {
+  compactMode = !compactMode;
+  document.getElementById("board").classList.toggle("compact-mode", compactMode);
+  document.getElementById("btn-compact").classList.toggle("active", compactMode);
+}
+
+function toggleCol(title) {
+  if (collapsedCols.has(title)) { collapsedCols.delete(title); }
+  else { collapsedCols.add(title); }
+  renderBoard();
+}
+
+// ── AWAITING SIGN-OFF COLUMN ──────────────────────────────────────────────────
+
+function signOffColHTML(mode) {
+  const items = Object.entries(_pending);
+  if (!items.length) return "";
+
+  const colIsCollapsed = collapsedCols.has("__signoff__");
+  const cards = items.map(([key, task]) => {
+    const chip = mode === "project"
+      ? `<span class="chip p-person">${task.assignee || "?"}</span>`
+      : `<span class="chip ${projectChip[task.project] || "p-admin"}" title="${task.project}">${task.project || "?"}</span>`;
+
+    return `<div class="signoff-card">
+      <div class="signoff-card-title">${task.title}</div>
+      ${task.reason ? `<div class="signoff-card-reason">${task.reason}</div>` : ""}
+      <div class="signoff-card-meta">
+        <div class="status-dot done"></div>
+        ${chip}
+        <button class="confirm-btn" onclick="confirmClosed('${key}')">Confirm done ✓</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `
+    <div class="col col-signoff${colIsCollapsed ? " collapsed" : ""}">
+      <div class="col-header" onclick="toggleCol('__signoff__')">
+        <div class="col-title">Awaiting Sign-off</div>
+        <div class="col-count">${items.length}</div>
+        <div class="col-toggle">▾</div>
+      </div>
+      <div class="cards">${cards}</div>
+    </div>`;
+}
+
+// ── COMPLETED COLUMN ──────────────────────────────────────────────────────────
+
+function dayLabel(ts) {
+  const d    = new Date(ts);
+  const now  = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function completedColHTML(mode) {
+  const stamps      = getStamps();
+  const syncDoneIds = new Set(tasks.filter(t => t.status === "done").map(t => t.id));
+  const items       = [];
+
+  // Manually checked tasks
+  Object.entries(stamps).forEach(([idStr, ts]) => {
+    const id   = Number(idStr);
+    const task = tasks.find(t => t.id === id);
+    if (task) items.push({ task, ts, source: "manual" });
+  });
+
+  // Tasks marked done in the data array (by sync)
+  syncDoneIds.forEach(id => {
+    if (!stamps[id]) {
+      const task = tasks.find(t => t.id === id);
+      if (task) items.push({ task, ts: null, source: "sync" });
+    }
+  });
+
+  // Recently removed (recentlyClosed)
+  recentlyClosed.forEach(rc => {
+    if (!stamps[rc.id] && !syncDoneIds.has(rc.id)) {
+      items.push({ task: rc, ts: null, source: "removed", closedDate: rc.closedDate });
+    }
+  });
+
+  // Sign-off confirmed
+  Object.entries(_confirmed).forEach(([key, task]) => {
+    items.push({ task, ts: task.confirmedAt || null, source: "confirmed", key });
+  });
+
+  if (!items.length) return "";
+
+  const groups = {};
+  items.forEach(item => {
+    const label = item.source === "removed" ? item.closedDate : (item.ts ? dayLabel(item.ts) : "Yesterday");
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(item);
+  });
+
+  const order = ["Today", "Yesterday"];
+  const keys  = [...new Set([...order.filter(k => groups[k]), ...Object.keys(groups).filter(k => !order.includes(k))])];
+
+  const colIsCollapsed = collapsedCols.has("__done__");
+  const rows = keys.map(label => {
+    const cardRows = groups[label].map(({ task, source, key }) => {
+      const chip = mode === "project"
+        ? `<span class="chip p-person">${task.assignee}</span>`
+        : `<span class="chip ${projectChip[task.project] || "p-admin"}" title="${task.project}">${task.project}</span>`;
+      const badge = source === "sync"
+        ? `<span style="font-size:9px;color:var(--done-green);font-weight:600">sync</span>`
+        : source === "removed"
+          ? `<span style="font-size:9px;color:var(--muted);font-weight:600">removed</span>`
+          : "";
+      // Undo: manual and confirmed tasks get undo buttons
+      const undoBtn = source === "confirmed"
+        ? `<button class="undo-btn" onclick="undoConfirmed('${key}')">Undo</button>`
+        : source === "manual"
+          ? `<button class="undo-btn" onclick="toggleDone(${task.id})">Undo</button>`
+          : "";
+      return `<div class="done-card">
+        <div class="done-card-title">${task.title}</div>
+        <div class="done-card-meta">${chip}${badge}${undoBtn}</div>
+      </div>`;
+    }).join("");
+    return `<div class="done-date-label">${label}</div>${cardRows}`;
+  }).join("");
+
+  return `
+    <div class="col col-done${colIsCollapsed ? " collapsed" : ""}">
+      <div class="col-header" onclick="toggleCol('__done__')">
+        <div class="col-title">Completed</div>
+        <div class="col-count">${items.length}</div>
+        <div class="col-toggle">▾</div>
+      </div>
+      <div class="cards">${rows}</div>
+    </div>`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+
+function renderBoard() {
+  const done  = getDone();
+  const board = document.getElementById("board");
+  let html    = "";
+
+  if (currentView === "project") {
+    // Union of projects from regular tasks (not done) and submitted tasks
+    const regularProjects   = tasks.filter(t => t.status !== "done" && !done.has(t.id)).map(t => t.project);
+    const submittedProjects = Object.values(_newTasks).map(t => t.project).filter(Boolean);
+    const allProjects       = [...new Set([...regularProjects, ...submittedProjects])];
+
+    html += allProjects.map(p => {
+      const regular   = tasks.filter(t => t.project === p && t.status !== "done" && !done.has(t.id));
+      const submitted = submittedItems(t => t.project === p);
+      return colHTML(p, [...regular, ...submitted], "project", done);
+    }).join("");
+  } else {
+    const regularAssignees   = teamOrder.filter(a => tasks.some(t => t.assignee === a && t.status !== "done" && !done.has(t.id)));
+    const submittedAssignees = [...new Set(Object.values(_newTasks).map(t => t.assignee).filter(Boolean))];
+    const allAssignees       = [...new Set([...regularAssignees, ...submittedAssignees.filter(a => !regularAssignees.includes(a))])];
+
+    html += allAssignees.map(a => {
+      const regular   = tasks.filter(t => t.assignee === a && t.status !== "done" && !done.has(t.id));
+      const submitted = submittedItems(t => t.assignee === a);
+      return colHTML(a, [...regular, ...submitted], "assignee", done);
+    }).join("");
+  }
+
+  html += signOffColHTML(currentView);
+  html += completedColHTML(currentView);
+  board.innerHTML = html;
+}
+
+function setView(view) {
+  currentView = view;
+  document.getElementById("btn-project").classList.toggle("active", view === "project");
+  document.getElementById("btn-assignee").classList.toggle("active", view === "assignee");
+  renderBoard();
+}
+
+// Render immediately, then re-render when Firebase loads
+renderBoard();
+toggleFit();
+
+// ── FIREBASE LISTENERS ────────────────────────────────────────────────────────
+
+boardRef.on('value', (snap) => {
+  const data = snap.val() || {};
+  _doneIds   = new Set(data.doneIds || []);
+  _stamps    = data.stamps || {};
+
+  // Auto-prune: remove manually-checked tasks older than 7 days
+  const oneWeekAgo = Date.now() - 7 * 86400000;
+  let pruned = false;
+  Object.entries(_stamps).forEach(([id, ts]) => {
+    if (ts < oneWeekAgo) {
+      _doneIds.delete(Number(id));
+      delete _stamps[id];
+      pruned = true;
+    }
+  });
+  if (pruned) boardRef.set({ doneIds: [..._doneIds], stamps: _stamps });
+
+  _fbReady = true;
+  document.getElementById('fb-dot').classList.ad
