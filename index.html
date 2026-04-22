@@ -1151,6 +1151,15 @@ boardRef.on('value', (snap) => {
       pruned = true;
     }
   });
+  // Fix: remove any doneIds that have no stamp — these are ghost-done tasks
+  // that are invisible (not in active columns, not in Completed). Restore them
+  // as active so they can be reviewed and re-ticked if needed.
+  [..._doneIds].forEach(id => {
+    if (!_stamps[id]) {
+      _doneIds.delete(id);
+      pruned = true;
+    }
+  });
   if (pruned) boardRef.set({ doneIds: [..._doneIds], stamps: _stamps });
 
   _fbReady = true;
@@ -1176,18 +1185,4 @@ pendingRef.on('value', (snap) => {
   renderBoard();
 });
 
-confirmedRef.on('value', (snap) => {
-  _confirmed = snap.val() || {};
-  renderBoard();
-});
-
-syncNotesRef.on('value', (snap) => {
-  const data = snap.val();
-  const el   = document.getElementById('sync-notes-text');
-  if (data && data.text && el && document.activeElement !== el) {
-    el.value = data.text;
-  }
-});
-</script>
-</body>
-</html>
+co
