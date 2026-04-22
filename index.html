@@ -1151,11 +1151,9 @@ boardRef.on('value', (snap) => {
       pruned = true;
     }
   });
-  // Fix: remove any doneIds with no stamp — they become invisible (not in
-  // active columns, not in Completed). Restore them as active so they can
-  // be seen and re-ticked if needed.
+  // Fix: doneIds with no stamp become invisible. Restore as active.
   [..._doneIds].forEach(id => {
-    if (\!_stamps[id]) { _doneIds.delete(id); pruned = true; }
+    if (!_stamps[id]) { _doneIds.delete(id); pruned = true; }
   });
   if (pruned) boardRef.set({ doneIds: [..._doneIds], stamps: _stamps });
 
