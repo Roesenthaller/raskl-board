@@ -592,7 +592,7 @@ const tasks = [
   { id: 18, title: "Byker Underpass wayfinding + steel artwork — Hugh on paternity leave, follow up on NCC meeting (25 Mar) with Rosa / Harper Perry", project: "Byker Underpass", assignee: "Amy", status: "urgent" },
   { id: 36, title: "Underpass tiles — Isabel Lezcano (NCC) visit scheduled Thu/Fri 10–11 Apr to count boxes before contractor collection w/c 13 Apr. Confirm visit happened + whether collection is now proceeding.", project: "Byker Underpass", assignee: "Dan", status: "soon" },
   // Delcy
-  { id: 19, title: "Production underway — installation now visible at Barbican Sculpture Court (Edward StudioFolk confirmed 22 Apr: 'Looking great!'). RSVP reminder for Delcy Morelos private view received 22 Apr — confirm RSVP. Hannah + Emily monitoring.", project: "Delcy", assignee: "Dan", status: "in-progress" },
+  { id: 19, title: "Production underway — installation now visible at Barbican Sculpture Court (Edward StudioFolk confirmed 22 Apr: ‘Looking great\!’). RSVP reminder for Delcy Morelos private view received 22 Apr — confirm RSVP. Hannah + Emily monitoring.", project: "Delcy", assignee: "Dan", status: "in-progress" },
   { id: 33, title: "Clay procurement — Valentine Clays: 15t Red Earthenware paid (2 invoices confirmed 15 Apr). AA Fireclay order still unreconciled with Valentine's. Near completion.", project: "Delcy", assignee: "Ellie", status: "in-progress" },
   // Black Planet
   { id: 25, title: "Production underway. Fabrication quotes requested from Francey Limited 16 Apr (Amy) — MDF plinths + perspex vitrines. Monitor response + confirm timeline.", project: "Black Planet", assignee: "Dan", status: "in-progress" },
@@ -1166,4 +1166,35 @@ boardRef.on('value', (snap) => {
   renderBoard();
 });
 
-db.ref('.info/connected').on('value', (s
+db.ref('.info/connected').on('value', (snap) => {
+  if (!snap.val()) {
+    document.getElementById('fb-dot').classList.remove('live');
+    document.getElementById('fb-label').textContent = 'offline';
+  }
+});
+
+newTasksRef.on('value', (snap) => {
+  _newTasks = snap.val() || {};
+  renderBoard();
+});
+
+pendingRef.on('value', (snap) => {
+  _pending = snap.val() || {};
+  renderBoard();
+});
+
+confirmedRef.on('value', (snap) => {
+  _confirmed = snap.val() || {};
+  renderBoard();
+});
+
+syncNotesRef.on('value', (snap) => {
+  const data = snap.val();
+  const el   = document.getElementById('sync-notes-text');
+  if (data && data.text && el && document.activeElement !== el) {
+    el.value = data.text;
+  }
+});
+</script>
+</body>
+</html>
