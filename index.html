@@ -509,7 +509,7 @@
 <header>
   <div class="header-left">
     <div class="logo">Raskl <span>/ Task Board</span></div>
-    <div class="sync">Last synced: 23 Apr 2026, 06:45</div>
+    <div class="sync">Last synced: 27 Apr 2026, 06:30</div>
     <div class="fb-status"><div class="fb-dot" id="fb-dot"></div><span id="fb-label">connecting…</span></div>
   </div>
   <div class="header-right">
@@ -556,27 +556,28 @@
 const tasks = [
   // Seeds in the City
   { id: 1,  title: "Updated budget breakdown — design, install &amp; disposal (engineer green-lit 8 Apr, now unblocked)",  project: "Seeds in the City", assignee: "Dan",   status: "urgent" },
-  { id: 2,  title: "StudioFolk–Raskl contract — NLA waiting to set up payments",                                           project: "Seeds in the City", assignee: "Dan",   status: "urgent" },
+  { id: 2,  title: "StudioFolk–Raskl contract — Edward Powe (StudioFolk) emailed 23 Apr requesting Raskl fee breakdown for Caroline at Culture Mile to start contracts &amp; payments. StudioFolk will invoice separately. Dan to respond with fee summary + drawdown. No reply yet.", project: "Seeds in the City", assignee: "Dan",   status: "urgent" },
   { id: 3,  title: "Cost Plan",                                                                                             project: "Seeds in the City", assignee: "Jack",  status: "in-progress" },
-  { id: 35, title: "Seeds planning — submitted 16 Apr (ref PP-14863452). Awaiting planner validation + formal reference number. StudioFolk monitoring. City Arts Panel presentation: Thu 23 Apr.", project: "Seeds in the City", assignee: "Dan", status: "waiting" },
-  { id: 39, title: "Updated Raskl programme — send to Lucy (NLA). Needed ahead of Thu 23 Apr Panel presentation.",         project: "Seeds in the City", assignee: "Ellie", status: "urgent" },
+  { id: 35, title: "Seeds planning — formal case ref 26/00541/FULL confirmed (acknowledgement forwarded by Edward 23 Apr). City Public Arts Panel presented 23 Apr by Lucy (NLA) — initial feedback on wayfinding/accessibility, seedling ownership, summer maintenance, community programming. Formal decision expected within one week.", project: "Seeds in the City", assignee: "Dan", status: "waiting" },
+  { id: 39, title: "Updated Raskl programme — send to Lucy (NLA). Panel presentation 23 Apr has now passed — confirm whether programme was sent. If not, share with Lucy for follow-up records.", project: "Seeds in the City", assignee: "Ellie", status: "soon" },
   // Pink Lane
   { id: 4,  title: "Status update / comms for works",                                                                      project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
   { id: 5,  title: "Complete outstanding docs: RAMs update + electrical schematics — [⚠ previously labelled 'P&amp;A docs' — confirm what this referred to]", project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
   { id: 6,  title: "Lighting settings review — [⚠ previously noted 'AAA not AAC' — confirm what this referred to: circuit labels? zones? Please clarify]",    project: "Pink Lane", assignee: "Ellie", status: "in-progress" },
   { id: 7,  title: "Status Update",                                                                                        project: "Pink Lane", assignee: "Jack",  status: "in-progress" },
-  { id: 8,  title: "FRA documents — Z3 QMS pack still outstanding (Jack away until 21 Apr). Louise Debnam placed FRA hold for gateway 20 Apr — will firm up date as works progress.",       project: "Pink Lane", assignee: "Jack",  status: "waiting" },
+  { id: 8,  title: "FRA documents — Oracle Safety attended Pink Lane Gateway Z1 + Z3 FRA (Fri 24 Apr, 10am–12pm). FRA outcome report not yet received — chase Oracle Safety for report. Z3 QMS pack still outstanding — Jack to complete.", project: "Pink Lane", assignee: "Jack",  status: "waiting" },
   { id: 9,  title: "Z1 install — Pete Evans confirmed (17 Apr): team arranged, £3k agreed with Hannah. Technical questions being addressed via Greg &amp; Brian (Ellie chasing 20 Apr). Jack back 21 Apr. Critical path meeting Wed 23 Apr.", project: "Pink Lane", assignee: "Hannah", status: "urgent" },
   { id: 24, title: "NE1 requests: arrange prototype gateway collection (Louise: no moving date yet, looking at next month) + collect off-cuts for Tiny Toon.", project: "Pink Lane", assignee: "Dan", status: "soon" },
   { id: 42, title: "Check turnbuckle stock before next site visit, order replacements (some damaged/lost per Brad handover). Retrieve turnbuckles left on canopy. Brad on leave until 27 Apr.", project: "Pink Lane", assignee: "Jack", status: "soon" },
-  { id: 44, title: "NE1 critical path — Dan responded 17 Apr (working hours + subcontractor info). Louise asked for detailed schedule; Dan explained they can't be more specific. Anna Czigler back from leave 20 Apr and available to assist. Critical path meeting Wed 23 Apr. Z3 QMS pack still outstanding (Jack back 21 Apr).", project: "Pink Lane", assignee: "Dan", status: "urgent" },
+  { id: 44, title: "NE1 critical path — Oracle Safety attended FRA Fri 24 Apr (Z1 + Z3); outcome report awaited. Critical path meeting 23 Apr complete. Z3 QMS pack still outstanding — Jack to complete. NE1 (Louise Debnam) flagged ongoing concerns re: communication delays and knock-on effects (16 Apr email).", project: "Pink Lane", assignee: "Dan", status: "urgent" },
+  { id: 51, title: "NAC 'Streets Alive' exhibition (Pink Lane + Forth Lane) — opens Sat 9 May at The Late Shows, runs to 30 May. Dan replied 27 Apr: contributing ribbon prototype, spare parts box, and Forth Lane prototype section. Google form completed. Physical materials drop-off Mon 27 Apr–Fri 1 May, 10am–4pm at Newcastle Arts Centre — arrange drop-off this week. Dan is away the Late Shows weekend. Confirm drop-off time with NAC.", project: "Pink Lane", assignee: "Dan", status: "urgent" },
   // Orchard St
-  { id: 23, title: "Panel specification active. Coating suppliers: Tiger Coatings (anti-graffiti powder — 0.8kg sample sent to APC 21 Apr); Rapid9 Signs (DTM flatbed viable on 40mm, laminate declined); JonSigns reviewing; APC (powder coat quote requested, not yet received); NEPC Ltd + NE Coatings also approached 22 Apr; Mankiewicz water-based clearcoat not suitable. Site visit: Rehan (NCC) sent Thu 23 Apr Teams invites but Dan declined (half-day from lunchtime) — asked for before 11am or Fri slot, no confirmed time back yet. RAMS with Anna Czigler (NCC) still outstanding.", project: "Orchard St", assignee: "Dan", status: "in-progress" },
+  { id: 23, title: "Panel specification active. Coating suppliers: Tiger Coatings (anti-graffiti powder — 0.8kg sample sent to APC 21 Apr); Rapid9 Signs (DTM flatbed viable on 40mm, laminate declined); JonSigns reviewing; APC (powder coat quote requested, not yet received); NEPC Ltd + NE Coatings also approached 22 Apr; Mankiewicz water-based clearcoat not suitable. 9am council Teams meeting Fri 24 Apr complete. Next: Orchard St Teams meeting Wed 29 Apr (time TBC — Anna asked for 12:00 but Howard D has conflict, likely 13:00 as originally scheduled). RAMS with Anna Czigler (NCC) still outstanding.", project: "Orchard St", assignee: "Dan", status: "in-progress" },
   // Forth Street
   { id: 11, title: "Forth Street design proposals review (Planit-IE)",                                                     project: "Forth Street", assignee: "Dan",  status: "soon" },
   { id: 38, title: "Forth Lane archway light install — underway w/c 13 Apr. NCC road closure + barriers confirmed (Hattons). Power connection live 13 Apr (Enerveo). Jack to update Vikki (NCC) re progress.", project: "Forth Street", assignee: "Jack", status: "in-progress" },
   // Northumberland St
-  { id: 12, title: "Timber oil — advice sent, awaiting Howard Hall decision on how to proceed",                            project: "Northumberland St", assignee: "Dan", status: "waiting" },
+  { id: 12, title: "Timber oil — advice sent, awaiting Howard Hall decision. Install actively underway — Hannah on site 23 Apr modifying raised decks to accommodate larger-than-expected root balls (diamond orientation). TW (Mark Lindsley) acknowledged + asked for further updates.", project: "Northumberland St", assignee: "Dan", status: "waiting" },
   // Tullie
   { id: 13, title: "Snagging — Septimius puzzle sticker residue (unresolved)",                                             project: "Tullie", assignee: "Dan", status: "in-progress" },
   { id: 31, title: "Phase 3 fit-out tender — invited by Linh Bui; questions to be directed to A&amp;T (de Matos Ryan / Creative Core)", project: "Tullie", assignee: "Dan", status: "soon" },
@@ -592,7 +593,7 @@ const tasks = [
   { id: 18, title: "Byker Underpass wayfinding + steel artwork — Hugh on paternity leave, follow up on NCC meeting (25 Mar) with Rosa / Harper Perry", project: "Byker Underpass", assignee: "Amy", status: "urgent" },
   { id: 36, title: "Underpass tiles — Isabel Lezcano (NCC) visit scheduled Thu/Fri 10–11 Apr to count boxes before contractor collection w/c 13 Apr. Confirm visit happened + whether collection is now proceeding.", project: "Byker Underpass", assignee: "Dan", status: "soon" },
   // Delcy
-  { id: 19, title: "Production underway — installation now visible at Barbican Sculpture Court (Edward StudioFolk confirmed 22 Apr: 'Looking great!'). RSVP reminder for Delcy Morelos private view received 22 Apr — confirm RSVP. Hannah + Emily monitoring.", project: "Delcy", assignee: "Dan", status: "in-progress" },
+  { id: 19, title: "Production underway — installation now visible at Barbican Sculpture Court (Edward StudioFolk confirmed 22 Apr: ‘Looking great\!’). RSVP reminder for Delcy Morelos private view received 22 Apr — confirm RSVP. Hannah + Emily monitoring.", project: "Delcy", assignee: "Dan", status: "in-progress" },
   { id: 33, title: "Clay procurement — Valentine Clays: 15t Red Earthenware paid (2 invoices confirmed 15 Apr). AA Fireclay order still unreconciled with Valentine's. Near completion.", project: "Delcy", assignee: "Ellie", status: "in-progress" },
   // Black Planet
   { id: 25, title: "Production underway. Fabrication quotes requested from Francey Limited 16 Apr (Amy) — MDF plinths + perspex vitrines. Monitor response + confirm timeline.", project: "Black Planet", assignee: "Dan", status: "in-progress" },
@@ -610,9 +611,9 @@ const tasks = [
   { id: 30, title: "Fire Risk Assessment for Unit 37 — Morley Property chased again 2 Apr, overdue since 31 Mar",         project: "Admin", assignee: "Dan", status: "urgent" },
   // Lime St Padel
   { id: 34, title: "Lime St Padel — structural/formation query: Craig (JC Consulting) has not replied despite multiple chases (last: 21 Apr). If no response, consider alternative structural engineer. Marc Horn (Studio Horn) also previously contacted.", project: "Lime St", assignee: "Dan", status: "waiting" },
-  { id: 50, title: "Lime St Padel — acoustic assessment for planning. Apex Acoustics (Adam Cooke / Luis Pereira) engaged 22 Apr: confirmed padel court experience, plans + location shared. Nova Acoustics also contacted. Chase both for formal scope + fee proposals.", project: "Lime St", assignee: "Dan", status: "soon" },
+  { id: 50, title: "Lime St Padel — acoustic assessment for planning. Nova Acoustics (Sandy Nisbet) sent formal scope + fee proposal 23 Apr — acknowledged by Dan. Apex Acoustics (Adam Cooke / Luis Pereira) plans + location shared 22 Apr — formal quote expected. ParkerJones Acoustics declined 23 Apr (too busy). Compare Nova and Apex proposals and instruct.", project: "Lime St", assignee: "Dan", status: "soon" },
   // Springfield
-  { id: 40, title: "Springfield — POoR Collective Kick Off meeting TODAY Thu 23 Apr 12pm–1pm (Teams). ⚠ Dan has half-day from lunchtime — meeting falls right at the boundary. Also: &amp;London / Studio Bosk / Barratt London kick-off this week (agenda circulated 21 Apr). Project now underway.", project: "Springfield", assignee: "Dan", status: "in-progress" },
+  { id: 40, title: "Springfield — Kickoff complete (23 Apr). &amp;London sent follow-up presentation. POoR Collective (Larry) sent file request list outstanding: survey info, construction programme, phasing plan, Revit model (RVT/3DM/SKP). Larry also sent meeting invite 27 Apr for Fri 8 May 2pm–5pm (outside Raskl hours — Dan off, studio closes 12:00 Fri). Dan declined 27 Apr and asked for agenda + reschedule. Larry sent quick catch-up Zoom link 27 Apr. Steering Group meeting frequency + site access for workshops still outstanding. Hannah/Amy to respond to file request list.", project: "Springfield", assignee: "Dan", status: "in-progress" },
   // Pilgrim Poles
   { id: 41, title: "Pilgrim Poles install — bolt torque photos for TW were needed before grouting Fri 18 Apr (deadline now passed). No email confirmation of photos received in this window. Confirm with Paul Brown (Aynsley) whether photos were sent + grouting has proceeded. If not, chase immediately.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent" },
   { id: 43, title: "Bradleys — damaged plinth panels. Mark Ward (15 Apr): factory repair preferred (more robust). On-site repair possible but inferior. Decision needed: send to factory vs install with damage + remediate later.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent" },
@@ -623,6 +624,8 @@ const tasks = [
   { id: 47, title: "Call Northern Print — Dan reminder 20 Apr.", project: "Admin", assignee: "Dan", status: "soon" },
   { id: 48, title: "Pink Lane Gateway contract — solicitor revised Limitation of Liability clause 21 Apr: cap must be linked to PL insurance level (not contract sum), re: third-party property damage only. Also requesting Z3 QMS (outstanding since mid-March). Hannah to review clauses 4.0–4.6 and revised clause 35. Dan to respond to Louise before critical path meeting Wed 23 Apr.", project: "Pink Lane", assignee: "Hannah", status: "urgent" },
   { id: 49, title: "British Museum Korea Exhibition tender — live on Delta eSourcing (BM.26.033). Hannah forwarded Delta invite 21 Apr. Delta access confirmed — Dan emailed backup codes to self 22 Apr. Log in and assess whether to submit.", project: "Admin", assignee: "Dan", status: "soon" },
+  // Richmond
+  { id: 52, title: "Richmond wayfinding — Tilly (HemingwayDesign) approached Dan 24 Apr about a wayfinding commission for the London Borough of Richmond (extension of existing town centre activation plan work). Dan replied 27 Apr expressing interest. Await brief / next steps from Tilly.", project: "Admin", assignee: "Dan", status: "waiting" },
 ];
 
 // ── RECENTLY CLOSED ───────────────────────────────────────────────────────────
@@ -1166,4 +1169,35 @@ boardRef.on('value', (snap) => {
   renderBoard();
 });
 
-db.ref('.info/connected').on('value', (s
+db.ref('.info/connected').on('value', (snap) => {
+  if (!snap.val()) {
+    document.getElementById('fb-dot').classList.remove('live');
+    document.getElementById('fb-label').textContent = 'offline';
+  }
+});
+
+newTasksRef.on('value', (snap) => {
+  _newTasks = snap.val() || {};
+  renderBoard();
+});
+
+pendingRef.on('value', (snap) => {
+  _pending = snap.val() || {};
+  renderBoard();
+});
+
+confirmedRef.on('value', (snap) => {
+  _confirmed = snap.val() || {};
+  renderBoard();
+});
+
+syncNotesRef.on('value', (snap) => {
+  const data = snap.val();
+  const el   = document.getElementById('sync-notes-text');
+  if (data && data.text && el && document.activeElement !== el) {
+    el.value = data.text;
+  }
+});
+</script>
+</body>
+</html>
