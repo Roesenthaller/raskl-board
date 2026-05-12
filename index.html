@@ -603,6 +603,7 @@ const tasks = [
   { id: 31, title: "Chase tender pack from Appleyard &amp; Trew for Tullie Phase 3 fit-out tender. Note — Dan requested pack 29 Apr; invited by Linh Bui.", project: "Tullie", assignee: "Dan", status: "soon", created: "29 Apr 2026" },
   // Mitcham Bandstand
   { id: 14, title: "Schedule catch-up call with Mark Warren re Mitcham Bandstand 2026 install. Note — Install end June (ready 4 Jul), dismantle after 3 Oct; dates confirmed 7 Apr.", project: "Mitcham Bandstand", assignee: "Dan", status: "waiting", created: "7 Apr 2026" },
+  { id: 70, title: "Send Mark Warren quote for Mitcham Bandstand install and dismantle 2026/27 at circa £44.5k. Note — Mark emailed 5 May requesting quote to get procurement permission; needed before end-of-June install.", project: "Mitcham Bandstand", assignee: "Dan", status: "urgent", created: "5 May 2026" },
   // Centre for Life
   { id: 15, title: "Arrange call with Andy Lloyd re CNC fossil panel (Centre for Life). Note — Dan proposed call, awaiting reply.", project: "Centre for Life", assignee: "Dan", status: "waiting", created: "1 Apr 2026" },
   // Panama Swimming Club
@@ -1250,18 +1251,4 @@ pendingRef.on('value', (snap) => {
   renderBoard();
 });
 
-confirmedRef.on('value', (snap) => {
-  _confirmed = snap.val() || {};
-  renderBoard();
-});
-
-syncNotesRef.on('value', (snap) => {
-  const data = snap.val();
-  const el   = document.getElementById('sync-notes-text');
-  if (data && data.text && el && document.activeElement !== el) {
-    el.value = data.text;
-  }
-});
-</script>
-</body>
-</html>
+confirmedRef.on('value', 
