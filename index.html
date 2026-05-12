@@ -343,8 +343,15 @@
       cursor: pointer; font-family: inherit; color: var(--muted);
       transition: border-color 0.12s, color 0.12s;
     }
-    .sub-edit-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+    .sub-edit-btn:hover   { border-color: #3b82f6; color: #3b82f6; }
     .sub-delete-btn:hover { border-color: var(--urgent); color: var(--urgent); }
+    .sub-done-btn {
+      background: transparent; border: 1px solid #bfdbfe;
+      border-radius: 4px; padding: 2px 7px; font-size: 10px;
+      cursor: pointer; font-family: inherit; color: var(--muted);
+      transition: border-color 0.12s, color 0.12s;
+    }
+    .sub-done-btn:hover { border-color: var(--done-green); color: var(--done-green); }
 
     .task-id      { font-size: 9px; color: #bbb; margin-left: auto; flex-shrink: 0; padding-left: 6px; }
     .task-created { font-size: 9px; color: #bbb; flex-shrink: 0; padding-left: 6px; }
@@ -515,7 +522,7 @@
 <header>
   <div class="header-left">
     <div class="logo">Raskl <span>/ Task Board</span></div>
-    <div class="sync">Last synced: 12 May 2026, 06:30</div>
+    <div class="sync">Last synced: 12 May 2026, 10:30</div>
     <div class="fb-status"><div class="fb-dot" id="fb-dot"></div><span id="fb-label">connecting…</span></div>
   </div>
   <div class="header-right">
@@ -631,7 +638,7 @@ const tasks = [
   { id: 57, title: "Attend Immersive Exhibition Scotland meeting with Urban Radicals TODAY 12 May 2pm (Google Meet). Note — Approached via Adam Harris (millimetre) 5 May; review exhibition brief beforehand.", project: "Admin", assignee: "Hannah", status: "soon", created: "5 May 2026" },
   { id: 58, title: "Review and tighten Firebase Realtime Database security rules (raskl-tasks-default-rtdb). Note — Firebase emailed 11 May: any user can currently read the database.", project: "Admin", assignee: "Dan", status: "soon", created: "12 May 2026" },
   { id: 54, title: "Email VAT return approval to Cole Windscheffel (RSM) — HMRC deadline was 7 May. Note — Q1 2026 return sent 28 Apr; £9,650.51 repayment due.", project: "Admin", assignee: "Dan", status: "urgent", created: "28 Apr 2026" },
-  { id: 55, title: "Submit British Museum Room 3 Tender (BM.26.003) — DEADLINE TODAY 12 May at 1pm. Note — Dan editing Appendix A3; Danny Moylan not replied re fabrication costs (4 Hahn Louda showcases).", project: "Admin", assignee: "Dan", status: "urgent", created: "8 May 2026" },
+  { id: 55, title: "Submit British Museum Room 3 Tender (BM.26.003) — DEADLINE TODAY 12 May at 1pm. Note — Dan editing Appendix A3; Hannah shared Appendix A2 (Bona Fide Certificate) 08:41; Danny Moylan not replied re fabrication costs.", project: "Admin", assignee: "Dan", status: "urgent", created: "8 May 2026" },
   // Lime St
   { id: 34, title: "Call Jason McArdle (Portland Consulting) re Lime St Padel structural engineering. Note — Portland introduced via Jonathan Grant 27 Apr; can handle full SUDS submission.", project: "Lime St", assignee: "Dan", status: "urgent", created: "27 Apr 2026" },
   { id: 50, title: "Instruct acoustic engineer for Lime St Padel planning. Note — Compare Nova Acoustics (Sandy Nisbet) and Apex Acoustics (Adam Cooke) proposals.", project: "Lime St", assignee: "Dan", status: "soon", created: "22 Apr 2026" },
@@ -640,6 +647,11 @@ const tasks = [
   // Pilgrim Poles
   { id: 41, title: "Confirm with Paul Brown (Aynsley) that Pilgrim Poles bolt torque photos were sent and grouting has proceeded. Note — Photos needed before grouting Fri 18 Apr.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent", created: "18 Apr 2026" },
   { id: 43, title: "Decide on Bradleys damaged plinth panel repair method — factory vs on-site (Pilgrim Poles). Note — Mark Ward (15 Apr) recommends factory repair as more robust.", project: "Pilgrim Poles", assignee: "Dan", status: "urgent", created: "15 Apr 2026" },
+  // Northumberland St — Hugh paternity handover
+  { id: 66, title: "NCC Standpipe Covers — select hardware and finalise small design tweak before ordering panels (Hannah/Dave). Note — Hugh handover 12 May; awaiting TW sign-off; designed same as bollard covers.", project: "Northumberland St", assignee: "Hannah", status: "waiting", created: "12 May 2026" },
+  { id: 67, title: "NCC Pilgrim Post No.6 — order 35mm base plate and await TW sign-off for install. Note — Hugh handover; Aynsley's (Paul) have drawing + 300mm SHS, ready to proceed; Paul at Temla can source plate; Dave has SE drawings.", project: "Northumberland St", assignee: "Dan", status: "waiting", created: "12 May 2026" },
+  // Roma Coffee
+  { id: 68, title: "Roma Coffee — await next steps. Note — Hugh handover; final renders + elevations sent to client; likely no action until Hugh returns from paternity leave.", project: "Admin", assignee: "Dan", status: "waiting", created: "12 May 2026" },
   // Whitechapel
   { id: 45, title: "Resume contact with Luc Jones / Layer Studio to progress Whitechapel Gateway tender. Note — Was on hold until after 7 May election; hold now expired.", project: "Whitechapel", assignee: "Dan", status: "soon", created: "16 Apr 2026" },
 ];
@@ -828,6 +840,18 @@ function deleteNewTask(key) {
   if (confirm('Remove this submitted task?')) newTasksRef.child(key).remove();
 }
 
+function doneNewTask(key) {
+  const task = _newTasks[key];
+  if (!task) return;
+  confirmedRef.child(key).set({
+    title:       task.description || '',
+    project:     task.project || '',
+    assignee:    task.assignee || '',
+    confirmedAt: Date.now()
+  });
+  newTasksRef.child(key).remove();
+}
+
 // ── SIGN-OFF ACTIONS ──────────────────────────────────────────────────────────
 
 function confirmClosed(key) {
@@ -905,7 +929,8 @@ function submittedCardHTML(task, mode) {
             <span class="sub-badge">you</span>
             ${chip}
             <div class="sub-actions">
-              <button class="sub-edit-btn" onclick="openEditSubmittedModal('${task._key}')">✎</button>
+              <button class="sub-done-btn"  onclick="doneNewTask('${task._key}')" title="Mark done">✓</button>
+              <button class="sub-edit-btn"  onclick="openEditSubmittedModal('${task._key}')">✎</button>
               <button class="sub-delete-btn" onclick="deleteNewTask('${task._key}')">✕</button>
             </div>
           </div>
