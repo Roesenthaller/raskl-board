@@ -259,6 +259,7 @@
 
     /* ── CARD ── */
     .card {
+      --card-bg: white;
       background: white; border-radius: 8px;
       display: flex; flex-direction: column;
       border: 1px solid var(--border);
@@ -271,6 +272,7 @@
 
     /* ── USER-SUBMITTED CARD ── */
     .card.user-submitted {
+      --card-bg: #eff6ff;
       background: #eff6ff;
       border-color: #93c5fd;
     }
@@ -379,6 +381,24 @@
     .p-byker          { background: #f0fdf4; color: #166534; }
     .p-limest         { background: #fefce8; color: #854d0e; }
     .p-whitechapel    { background: #fff1f2; color: #881337; }
+
+    /* ── CARD CLIP ── */
+    .card-clip {
+      position: relative;
+      max-height: 109px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .card-clip.expanded { max-height: none; cursor: default; }
+    .card-clip.no-clip   { max-height: none; cursor: default; }
+    .card-clip:not(.expanded):not(.no-clip)::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 28px;
+      background: linear-gradient(transparent, var(--card-bg, white));
+      pointer-events: none;
+    }
 
     /* ── SYNC NOTES PANEL ── */
     .sync-notes-panel {
@@ -929,6 +949,19 @@ function toggleColours() {
   document.getElementById('btn-colours').classList.toggle('active', _coloursOn);
 }
 
+// ── CLIP TOGGLE ──────────────────────────────────────────────────────────────
+
+function toggleClip(el) {
+  if (el.classList.contains('no-clip')) return;
+  el.classList.toggle('expanded');
+}
+
+function initClips() {
+  document.querySelectorAll('.card-clip').forEach(el => {
+    if (el.scrollHeight <= el.clientHeight + 4) el.classList.add('no-clip');
+  });
+}
+
 // ── RENDER ────────────────────────────────────────────────────────────────────
 
 // Build a submitted-task pseudo-object for inline rendering
@@ -955,7 +988,7 @@ function submittedCardHTML(task, mode) {
       <div class="urgency-bar ${task.status}"></div>
       <div class="card-content">
         <div class="card-body">
-          <div class="card-title">${task.title}</div>
+          <div class="card-clip" onclick="toggleClip(this)"><div class="card-title">${task.title}</div></div>
           <div class="card-meta">
             <span class="sub-badge">you</span>
             ${chip}
@@ -972,8 +1005,10 @@ function submittedCardHTML(task, mode) {
 
 function renderTitle(raw) {
   const match = raw.match(/^([\s\S]*?)\. Note \u2014 ([\s\S]*)$/);
-  if (!match) return `<div class="card-title">${raw}</div>`;
-  return `<div class="card-title">${match[1]}.</div><div class="card-note">Note \u2014 ${match[2]}</div>`;
+  const inner = match
+    ? `<div class="card-title">${match[1]}.</div><div class="card-note">Note \u2014 ${match[2]}</div>`
+    : `<div class="card-title">${raw}</div>`;
+  return `<div class="card-clip" onclick="toggleClip(this)">${inner}</div>`;
 }
 
 function cardHTML(task, mode, done) {
@@ -1190,9 +1225,9 @@ function renderBoard() {
     const allProjects       = [...new Set([...regularProjects, ...submittedProjects])];
 
     const allProjectsSorted = [...allProjects].sort((a, b) => {
-      const aC = tasks.filter(t => t.project === a && t.status !== "done" && !done.has(t.id)).length;
-      const bC = tasks.filter(t => t.project === b && t.status !== "done" && !done.has(t.id)).length;
-      return aC - bC;
+      if (a === 'Admin' && b !== 'Admin') return 1;
+      if (b === 'Admin' && a !== 'Admin') return -1;
+      return a.localeCompare(b);
     });
     html += allProjectsSorted.map(p => {
       const regular   = tasks.filter(t => t.project === p && t.status !== "done" && !done.has(t.id));
@@ -1219,6 +1254,7 @@ function renderBoard() {
   html += signOffColHTML(currentView);
   html += completedColHTML(currentView);
   board.innerHTML = html;
+  requestAnimationFrame(initClips);
 }
 
 function setView(view) {
@@ -1240,10 +1276,10 @@ boardRef.on('value', (snap) => {
   _stamps    = data.stamps || {};
 
   // Auto-prune: remove manually-checked tasks older than 7 days
-  const oneWeekAgo = Date.now() - 7 * 86400000;
+  const ninetyDaysAgo = Date.now() - 90 * 86400000;
   let pruned = false;
   Object.entries(_stamps).forEach(([id, ts]) => {
-    if (ts < oneWeekAgo) {
+    if (ts < ninetyDaysAgo) {
       _doneIds.delete(Number(id));
       delete _stamps[id];
       pruned = true;
